@@ -1,7 +1,7 @@
 import random
 from pathlib import Path
 
-AUDIO_EXTENSIONS = {".wav", ".mp3"}
+AUDIO_EXTENSIONS = {".wav", ".ogg", ".mp3"}
 
 
 class ClipLibrary:

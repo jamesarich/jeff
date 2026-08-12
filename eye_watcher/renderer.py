@@ -10,7 +10,10 @@ class Renderer:
         pygame.init()
         raw_image = pygame.image.load(str(image_path))
         width, height = raw_image.get_size()
-        flags = pygame.FULLSCREEN if fullscreen else 0
+        # SCALED lets the compositor stretch the photo-sized surface to the
+        # actual display resolution instead of asking for a video mode that
+        # matches the image dimensions.
+        flags = pygame.FULLSCREEN | pygame.SCALED if fullscreen else 0
         self.screen = pygame.display.set_mode((width, height), flags)
         pygame.display.set_caption("Jeff Is Watching")
         self.image = raw_image.convert()

@@ -8,6 +8,14 @@ def test_parse_args_defaults():
     assert args.camera_index == 0
     assert args.cooldown == 60.0
     assert args.smoothing_alpha == 0.3
+    assert args.fps == 15.0
+
+
+def test_parse_args_default_paths_are_absolute():
+    args = parse_args([])
+    assert args.image.is_absolute()
+    assert args.calibration.is_absolute()
+    assert args.sounds_dir.is_absolute()
 
 
 def test_parse_args_overrides():

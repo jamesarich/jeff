@@ -20,6 +20,12 @@ def test_clips_ignores_non_audio_files(tmp_path):
     assert lib.clips() == [tmp_path / "clip.wav"]
 
 
+def test_clips_accepts_ogg(tmp_path):
+    (tmp_path / "clip.ogg").write_bytes(b"\x00")
+    lib = ClipLibrary(tmp_path)
+    assert lib.clips() == [tmp_path / "clip.ogg"]
+
+
 def test_pick_avoids_immediate_repeat(tmp_path):
     (tmp_path / "a.wav").write_bytes(b"\x00")
     (tmp_path / "b.wav").write_bytes(b"\x00")
