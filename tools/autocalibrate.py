@@ -5,13 +5,13 @@ import math
 import sys
 from pathlib import Path
 
-import cv2
 import mediapipe as mp
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from _common import load_image
 
 from eye_watcher.calibration import Calibration, EyeCalibration, save_calibration
-from eye_watcher.tracker import DEFAULT_MODEL_PATH
+from eye_watcher.paths import DEFAULT_CALIBRATION_PATH, DEFAULT_MODEL_PATH
+from eye_watcher.tracker import create_landmarker, to_mp_image
 
 # Canonical face-mesh eye-corner landmark indices (subject's right eye appears
 # on the image's left in an unmirrored portrait, and vice versa).
@@ -33,24 +33,16 @@ def _eye_from_corners(landmarks, corner_indices, width: int, height: int) -> Eye
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("image", type=Path, help="Path to the base photo")
-    parser.add_argument("--output", type=Path, default=Path("calibration.json"))
+    parser.add_argument("--output", type=Path, default=DEFAULT_CALIBRATION_PATH)
     parser.add_argument("--model", type=Path, default=DEFAULT_MODEL_PATH)
     args = parser.parse_args()
 
-    image = cv2.imread(str(args.image))
-    if image is None:
-        raise FileNotFoundError(f"Could not load image: {args.image}")
+    image = load_image(args.image)
     height, width = image.shape[:2]
 
-    options = mp.tasks.vision.FaceLandmarkerOptions(
-        base_options=mp.tasks.BaseOptions(model_asset_path=str(args.model)),
-        running_mode=mp.tasks.vision.RunningMode.IMAGE,
-        num_faces=1,
-    )
-    landmarker = mp.tasks.vision.FaceLandmarker.create_from_options(options)
+    landmarker = create_landmarker(args.model, mp.tasks.vision.RunningMode.IMAGE, num_faces=1)
     try:
-        rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        result = landmarker.detect(mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb))
+        result = landmarker.detect(to_mp_image(image))
     finally:
         landmarker.close()
 

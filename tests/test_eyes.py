@@ -3,7 +3,15 @@ import random
 import pytest
 
 from eye_watcher.calibration import Calibration, EyeCalibration
-from eye_watcher.eyes import Blinker, GazeHold, PupilAnimator, idle_offset
+from eye_watcher.eyes import (
+    Blinker,
+    GazeHold,
+    HORIZONTAL_TRAVEL_FRACTION,
+    PupilAnimator,
+    VERTICAL_TRAVEL_FRACTION,
+    idle_offset,
+)
+from eye_watcher.gaze import FaceOffset
 
 
 def make_calibration() -> Calibration:
@@ -22,17 +30,25 @@ def test_zero_target_keeps_pupils_centered():
 
 def test_update_clamps_large_target_to_max_offset():
     cal = make_calibration()
-    animator = PupilAnimator(calibration=cal, smoothing_alpha=1.0, max_offset_fraction=0.6)
+    animator = PupilAnimator(calibration=cal, smoothing_alpha=1.0)
     left, _ = animator.update(5.0, 0.0)
-    max_dx = cal.left.radius * 0.6
+    max_dx = cal.left.radius * HORIZONTAL_TRAVEL_FRACTION
     assert left == pytest.approx((cal.left.center_x + max_dx, cal.left.center_y))
+
+
+def test_vertical_travel_is_smaller_than_horizontal():
+    cal = make_calibration()
+    animator = PupilAnimator(calibration=cal, smoothing_alpha=1.0)
+    left, _ = animator.update(0.0, 1.0)
+    max_dy = cal.left.radius * VERTICAL_TRAVEL_FRACTION
+    assert left == pytest.approx((cal.left.center_x, cal.left.center_y + max_dy))
+    assert VERTICAL_TRAVEL_FRACTION < HORIZONTAL_TRAVEL_FRACTION
 
 
 def test_update_smooths_toward_target_gradually():
     cal = make_calibration()
-    animator = PupilAnimator(calibration=cal, smoothing_alpha=0.5, max_offset_fraction=0.6)
-    max_dx = cal.left.radius * 0.6
-    fully_clamped_x = cal.left.center_x + max_dx
+    animator = PupilAnimator(calibration=cal, smoothing_alpha=0.5)
+    fully_clamped_x = cal.left.center_x + cal.left.radius * HORIZONTAL_TRAVEL_FRACTION
 
     first_left, _ = animator.update(1.0, 0.0)
     second_left, _ = animator.update(1.0, 0.0)
@@ -53,31 +69,30 @@ def test_idle_offset_stays_within_small_range():
 
 def test_gaze_hold_passes_through_tracked_target():
     hold = GazeHold(hold_seconds=2.0)
-    assert hold.update(True, 0.4, -0.2, now=10.0) == (0.4, -0.2)
+    assert hold.update(FaceOffset(0.4, -0.2), now=10.0) == (0.4, -0.2)
 
 
 def test_gaze_hold_keeps_last_target_during_brief_dropout():
     hold = GazeHold(hold_seconds=2.0)
-    hold.update(True, 0.4, -0.2, now=10.0)
+    hold.update(FaceOffset(0.4, -0.2), now=10.0)
     # single dropped frame: target must NOT jump to idle drift
-    assert hold.update(False, 0.0, 0.0, now=10.1) == (0.4, -0.2)
-    assert hold.update(False, 0.0, 0.0, now=11.9) == (0.4, -0.2)
+    assert hold.update(None, now=10.1) == (0.4, -0.2)
+    assert hold.update(None, now=11.9) == (0.4, -0.2)
 
 
 def test_gaze_hold_falls_back_to_idle_after_grace():
     hold = GazeHold(hold_seconds=2.0)
-    hold.update(True, 0.4, -0.2, now=10.0)
-    result = hold.update(False, 0.0, 0.0, now=13.0)
-    assert result == idle_offset(13.0)
+    hold.update(FaceOffset(0.4, -0.2), now=10.0)
+    assert hold.update(None, now=13.0) == idle_offset(13.0)
 
 
 def test_gaze_hold_idles_before_any_face_seen():
     hold = GazeHold(hold_seconds=2.0)
-    assert hold.update(False, 0.0, 0.0, now=5.0) == idle_offset(5.0)
+    assert hold.update(None, now=5.0) == idle_offset(5.0)
 
 
-def make_blinker(**kwargs) -> Blinker:
-    return Blinker(rng=random.Random(0), min_interval=3.0, max_interval=3.0, duration=0.2, **kwargs)
+def make_blinker() -> Blinker:
+    return Blinker(rng=random.Random(0), min_interval=3.0, max_interval=3.0, duration=0.2)
 
 
 def test_blinker_eyes_open_before_first_blink():

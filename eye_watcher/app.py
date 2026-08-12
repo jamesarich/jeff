@@ -9,20 +9,17 @@ from eye_watcher.audio_player import AudioPlayer
 from eye_watcher.calibration import load_calibration
 from eye_watcher.clip_library import ClipLibrary
 from eye_watcher.eyes import Blinker, GazeHold, PupilAnimator
+from eye_watcher.paths import DEFAULT_CALIBRATION_PATH, DEFAULT_IMAGE_PATH, DEFAULT_SOUNDS_DIR
 from eye_watcher.renderer import Renderer
 from eye_watcher.state import VisitorStateMachine
 from eye_watcher.tracker import FaceTracker
 
-# Anchor defaults to the repo, not the process cwd, so launching from a
-# systemd unit / autostart entry (cwd = / or $HOME) still finds the files.
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Jeff Is Watching You: eye-contact edition")
-    parser.add_argument("--image", type=Path, default=PROJECT_ROOT / "assets" / "jeff.jpg")
-    parser.add_argument("--calibration", type=Path, default=PROJECT_ROOT / "calibration.json")
-    parser.add_argument("--sounds-dir", type=Path, default=PROJECT_ROOT / "sounds")
+    parser.add_argument("--image", type=Path, default=DEFAULT_IMAGE_PATH)
+    parser.add_argument("--calibration", type=Path, default=DEFAULT_CALIBRATION_PATH)
+    parser.add_argument("--sounds-dir", type=Path, default=DEFAULT_SOUNDS_DIR)
     parser.add_argument("--camera-index", type=int, default=0)
     parser.add_argument("--cooldown", type=float, default=60.0)
     parser.add_argument("--smoothing-alpha", type=float, default=0.3)
@@ -55,7 +52,7 @@ def main(argv: list[str] | None = None) -> None:
     except FileNotFoundError:
         sys.exit(
             f"Calibration file not found: {args.calibration} — "
-            f"run: python tools/calibrate.py {args.image}"
+            f"run: python tools/autocalibrate.py {args.image}"
         )
 
     animator = PupilAnimator(calibration=calibration, smoothing_alpha=args.smoothing_alpha)
@@ -67,22 +64,22 @@ def main(argv: list[str] | None = None) -> None:
     tracker = None
     renderer = None
     try:
-        tracker = FaceTracker(camera_index=args.camera_index, debug=args.debug, mirror=args.mirror)
+        # Renderer first: the photo goes up while the camera and the mediapipe
+        # model (seconds on a Pi) are still initialising.
         renderer = Renderer(image_path=args.image, calibration=calibration, fullscreen=args.fullscreen)
+        renderer.draw(*animator.update(0.0, 0.0))
+        tracker = FaceTracker(camera_index=args.camera_index, debug=args.debug, mirror=args.mirror)
         audio = AudioPlayer()
         clock = pygame.time.Clock()
 
         while not _wants_quit():
             now = time.monotonic()
-            result = tracker.read()
+            offset = tracker.read()
 
-            target_dx, target_dy = gaze_hold.update(
-                result.face_found, result.offset.dx, result.offset.dy, now
-            )
-
+            target_dx, target_dy = gaze_hold.update(offset, now)
             left_pupil, right_pupil = animator.update(target_dx, target_dy)
 
-            if state_machine.update(result.face_found, now):
+            if state_machine.update(offset is not None, now):
                 clip = clips.pick()
                 if clip is not None:
                     audio.play(clip)
@@ -96,7 +93,3 @@ def main(argv: list[str] | None = None) -> None:
             tracker.release()
         if renderer is not None:
             renderer.close()
-
-
-if __name__ == "__main__":
-    main()

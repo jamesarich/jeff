@@ -17,11 +17,7 @@ class Calibration:
 
 
 def save_calibration(path: Path, calibration: Calibration) -> None:
-    data = {
-        "left": asdict(calibration.left),
-        "right": asdict(calibration.right),
-    }
-    path.write_text(json.dumps(data, indent=2))
+    path.write_text(json.dumps(asdict(calibration), indent=2))
 
 
 def load_calibration(path: Path) -> Calibration:

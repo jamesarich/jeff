@@ -27,13 +27,6 @@ def test_offset_is_clamped_to_unit_range():
     assert offset.dy == 1.0
 
 
-def test_mirror_x_flips_horizontal_sign_only():
-    plain = landmarks_to_offset(160, 120, 640, 480)
-    mirrored = landmarks_to_offset(160, 120, 640, 480, mirror_x=True)
-    assert mirrored.dx == pytest.approx(-plain.dx)
-    assert mirrored.dy == pytest.approx(plain.dy)
-
-
 def _face(x0: float, y0: float, x1: float, y1: float):
     return [SimpleNamespace(x=x0, y=y0), SimpleNamespace(x=x1, y=y1)]
 

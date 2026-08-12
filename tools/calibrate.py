@@ -1,3 +1,5 @@
+"""Manual fallback calibration: click eye centers/edges on the base photo."""
+
 import argparse
 import math
 import sys
@@ -5,9 +7,10 @@ from pathlib import Path
 
 import cv2
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from _common import load_image
 
 from eye_watcher.calibration import Calibration, EyeCalibration, save_calibration
+from eye_watcher.paths import DEFAULT_CALIBRATION_PATH
 
 POINT_LABELS = [
     "Click LEFT eye CENTER",
@@ -18,10 +21,7 @@ POINT_LABELS = [
 
 
 def _collect_points(image_path: Path) -> list[tuple[int, int]]:
-    image = cv2.imread(str(image_path))
-    if image is None:
-        raise FileNotFoundError(f"Could not load image: {image_path}")
-
+    image = load_image(image_path)
     points: list[tuple[int, int]] = []
     window = "Calibrate (click 4 points, q to quit)"
 
@@ -51,14 +51,10 @@ def _collect_points(image_path: Path) -> list[tuple[int, int]]:
     return points
 
 
-def _distance(a: tuple[int, int], b: tuple[int, int]) -> float:
-    return math.dist(a, b)
-
-
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Click eye centers/edges to build calibration.json")
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("image", type=Path, help="Path to the base Jeff photo")
-    parser.add_argument("--output", type=Path, default=Path("calibration.json"))
+    parser.add_argument("--output", type=Path, default=DEFAULT_CALIBRATION_PATH)
     args = parser.parse_args()
 
     left_center, left_edge, right_center, right_edge = _collect_points(args.image)
@@ -66,11 +62,11 @@ def main() -> None:
     calibration = Calibration(
         left=EyeCalibration(
             center_x=left_center[0], center_y=left_center[1],
-            radius=_distance(left_center, left_edge),
+            radius=math.dist(left_center, left_edge),
         ),
         right=EyeCalibration(
             center_x=right_center[0], center_y=right_center[1],
-            radius=_distance(right_center, right_edge),
+            radius=math.dist(right_center, right_edge),
         ),
     )
     save_calibration(args.output, calibration)

@@ -7,19 +7,7 @@ class FaceOffset:
     dy: float
 
 
-def landmarks_to_offset(
-    point_x: float,
-    point_y: float,
-    frame_width: int,
-    frame_height: int,
-    mirror_x: bool = False,
-) -> FaceOffset:
-    # An unmirrored camera sees a visitor moving to their right as moving toward
-    # image-left; mirror_x flips the horizontal axis so the on-screen eyes follow
-    # the visitor instead of moving away from them.
-    if mirror_x:
-        point_x = frame_width - point_x
-
+def landmarks_to_offset(point_x: float, point_y: float, frame_width: int, frame_height: int) -> FaceOffset:
     center_x = frame_width / 2
     center_y = frame_height / 2
 
@@ -34,10 +22,21 @@ def landmarks_to_offset(
 
 def largest_face(faces):
     """Pick the face landmark list with the largest bounding-box area."""
+    if len(faces) == 1:
+        return faces[0]
 
     def area(landmarks) -> float:
-        xs = [point.x for point in landmarks]
-        ys = [point.y for point in landmarks]
-        return (max(xs) - min(xs)) * (max(ys) - min(ys))
+        min_x = max_x = landmarks[0].x
+        min_y = max_y = landmarks[0].y
+        for point in landmarks[1:]:
+            if point.x < min_x:
+                min_x = point.x
+            elif point.x > max_x:
+                max_x = point.x
+            if point.y < min_y:
+                min_y = point.y
+            elif point.y > max_y:
+                max_y = point.y
+        return (max_x - min_x) * (max_y - min_y)
 
     return max(faces, key=area)

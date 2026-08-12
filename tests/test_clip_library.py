@@ -29,10 +29,9 @@ def test_clips_accepts_ogg(tmp_path):
 def test_pick_avoids_immediate_repeat(tmp_path):
     (tmp_path / "a.wav").write_bytes(b"\x00")
     (tmp_path / "b.wav").write_bytes(b"\x00")
-    lib = ClipLibrary(tmp_path)
-    rng = random.Random(0)
+    lib = ClipLibrary(tmp_path, rng=random.Random(0))
 
-    picks = [lib.pick(rng) for _ in range(20)]
+    picks = [lib.pick() for _ in range(20)]
 
     for previous, current in zip(picks, picks[1:]):
         assert previous != current

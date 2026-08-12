@@ -1,18 +1,18 @@
-from enum import Enum, auto
-
-
-class VisitorState(Enum):
-    IDLE = auto()
-    WATCHING = auto()
+# Shared debounce for the noisy per-frame face_found bit: detection flickers
+# off for a few frames whenever the visitor moves (motion blur), and neither
+# the audio trigger nor the gaze should treat that as the visitor leaving.
+FACE_LOST_GRACE_SECONDS = 2.0
 
 
 class VisitorStateMachine:
-    def __init__(self, cooldown_seconds: float = 60.0, lost_grace_seconds: float = 2.0):
+    def __init__(
+        self,
+        cooldown_seconds: float = 60.0,
+        lost_grace_seconds: float = FACE_LOST_GRACE_SECONDS,
+    ):
         self.cooldown_seconds = cooldown_seconds
-        # Detection flickers (a single missed frame) must not count as the
-        # visitor leaving, or the greeting re-triggers at the same person.
         self.lost_grace_seconds = lost_grace_seconds
-        self.state = VisitorState.IDLE
+        self.watching = False
         self._last_trigger_time: float | None = None
         self._last_seen_time: float | None = None
 
@@ -20,7 +20,7 @@ class VisitorStateMachine:
         triggered = False
         if face_found:
             self._last_seen_time = now
-            if self.state is VisitorState.IDLE:
+            if not self.watching:
                 cooldown_elapsed = (
                     self._last_trigger_time is None
                     or (now - self._last_trigger_time) >= self.cooldown_seconds
@@ -28,12 +28,12 @@ class VisitorStateMachine:
                 if cooldown_elapsed:
                     triggered = True
                     self._last_trigger_time = now
-            self.state = VisitorState.WATCHING
-        elif self.state is VisitorState.WATCHING:
+            self.watching = True
+        elif self.watching:
             face_gone_long_enough = (
                 self._last_seen_time is None
                 or (now - self._last_seen_time) >= self.lost_grace_seconds
             )
             if face_gone_long_enough:
-                self.state = VisitorState.IDLE
+                self.watching = False
         return triggered

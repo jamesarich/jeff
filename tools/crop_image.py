@@ -1,15 +1,16 @@
 """Trim near-white margins from the base photo and shift calibration to match."""
 
 import argparse
-import sys
+from dataclasses import replace
 from pathlib import Path
 
 import cv2
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from _common import load_image
 
-from eye_watcher.calibration import Calibration, EyeCalibration, load_calibration, save_calibration
+from eye_watcher.calibration import Calibration, load_calibration, save_calibration
+from eye_watcher.paths import DEFAULT_CALIBRATION_PATH
 
 
 def find_content_box(image, threshold: int = 240) -> tuple[int, int, int, int]:
@@ -27,32 +28,22 @@ def find_content_box(image, threshold: int = 240) -> tuple[int, int, int, int]:
 
 
 def shift_calibration(calibration: Calibration, dx: float, dy: float) -> Calibration:
-    return Calibration(
-        left=EyeCalibration(
-            center_x=calibration.left.center_x - dx,
-            center_y=calibration.left.center_y - dy,
-            radius=calibration.left.radius,
-        ),
-        right=EyeCalibration(
-            center_x=calibration.right.center_x - dx,
-            center_y=calibration.right.center_y - dy,
-            radius=calibration.right.radius,
-        ),
-    )
+    def shift(eye):
+        return replace(eye, center_x=eye.center_x - dx, center_y=eye.center_y - dy)
+
+    return Calibration(left=shift(calibration.left), right=shift(calibration.right))
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("image", type=Path, help="Image to crop in place")
-    parser.add_argument("--calibration", type=Path, default=Path("calibration.json"),
+    parser.add_argument("--calibration", type=Path, default=DEFAULT_CALIBRATION_PATH,
                         help="Calibration file to shift by the crop offset (skipped if missing)")
     parser.add_argument("--threshold", type=int, default=240,
                         help="Pixels with gray value >= this count as margin")
     args = parser.parse_args()
 
-    image = cv2.imread(str(args.image))
-    if image is None:
-        raise FileNotFoundError(f"Could not load image: {args.image}")
+    image = load_image(args.image)
 
     x0, y0, x1, y1 = find_content_box(image, args.threshold)
     height, width = image.shape[:2]
