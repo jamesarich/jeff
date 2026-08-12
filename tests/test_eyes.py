@@ -1,7 +1,7 @@
 import pytest
 
 from eye_watcher.calibration import Calibration, EyeCalibration
-from eye_watcher.eyes import PupilAnimator, idle_offset
+from eye_watcher.eyes import GazeHold, PupilAnimator, idle_offset
 
 
 def make_calibration() -> Calibration:
@@ -47,3 +47,28 @@ def test_idle_offset_stays_within_small_range():
         dx, dy = idle_offset(t)
         assert -0.5 <= dx <= 0.5
         assert -0.5 <= dy <= 0.5
+
+
+def test_gaze_hold_passes_through_tracked_target():
+    hold = GazeHold(hold_seconds=2.0)
+    assert hold.update(True, 0.4, -0.2, now=10.0) == (0.4, -0.2)
+
+
+def test_gaze_hold_keeps_last_target_during_brief_dropout():
+    hold = GazeHold(hold_seconds=2.0)
+    hold.update(True, 0.4, -0.2, now=10.0)
+    # single dropped frame: target must NOT jump to idle drift
+    assert hold.update(False, 0.0, 0.0, now=10.1) == (0.4, -0.2)
+    assert hold.update(False, 0.0, 0.0, now=11.9) == (0.4, -0.2)
+
+
+def test_gaze_hold_falls_back_to_idle_after_grace():
+    hold = GazeHold(hold_seconds=2.0)
+    hold.update(True, 0.4, -0.2, now=10.0)
+    result = hold.update(False, 0.0, 0.0, now=13.0)
+    assert result == idle_offset(13.0)
+
+
+def test_gaze_hold_idles_before_any_face_seen():
+    hold = GazeHold(hold_seconds=2.0)
+    assert hold.update(False, 0.0, 0.0, now=5.0) == idle_offset(5.0)

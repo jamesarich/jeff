@@ -21,6 +21,33 @@ def idle_offset(t: float) -> tuple[float, float]:
     return dx, dy
 
 
+class GazeHold:
+    """Bridge brief detection dropouts so the gaze doesn't dart to idle drift.
+
+    Face detection flickers off for a few frames whenever the visitor moves
+    (motion blur); yanking the pupil target to the idle sine wave on every
+    dropped frame makes the eyes dart in arbitrary directions mid-track.
+    """
+
+    def __init__(self, hold_seconds: float = 2.0):
+        self.hold_seconds = hold_seconds
+        self._last_target: tuple[float, float] | None = None
+        self._last_seen_time: float | None = None
+
+    def update(self, face_found: bool, dx: float, dy: float, now: float) -> tuple[float, float]:
+        if face_found:
+            self._last_target = (dx, dy)
+            self._last_seen_time = now
+            return self._last_target
+        if (
+            self._last_target is not None
+            and self._last_seen_time is not None
+            and (now - self._last_seen_time) < self.hold_seconds
+        ):
+            return self._last_target
+        return idle_offset(now)
+
+
 class PupilAnimator:
     def __init__(self, calibration: Calibration, smoothing_alpha: float = 0.3, max_offset_fraction: float = 0.6):
         self.calibration = calibration

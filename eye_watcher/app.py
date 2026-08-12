@@ -8,7 +8,7 @@ import pygame
 from eye_watcher.audio_player import AudioPlayer
 from eye_watcher.calibration import load_calibration
 from eye_watcher.clip_library import ClipLibrary
-from eye_watcher.eyes import PupilAnimator, idle_offset
+from eye_watcher.eyes import GazeHold, PupilAnimator
 from eye_watcher.renderer import Renderer
 from eye_watcher.state import VisitorStateMachine
 from eye_watcher.tracker import FaceTracker
@@ -60,6 +60,7 @@ def main(argv: list[str] | None = None) -> None:
 
     animator = PupilAnimator(calibration=calibration, smoothing_alpha=args.smoothing_alpha)
     state_machine = VisitorStateMachine(cooldown_seconds=args.cooldown)
+    gaze_hold = GazeHold()
     clips = ClipLibrary(args.sounds_dir)
 
     tracker = None
@@ -70,15 +71,13 @@ def main(argv: list[str] | None = None) -> None:
         audio = AudioPlayer()
         clock = pygame.time.Clock()
 
-        start_time = time.monotonic()
         while not _wants_quit():
             now = time.monotonic()
             result = tracker.read()
 
-            if result.face_found:
-                target_dx, target_dy = result.offset.dx, result.offset.dy
-            else:
-                target_dx, target_dy = idle_offset(now - start_time)
+            target_dx, target_dy = gaze_hold.update(
+                result.face_found, result.offset.dx, result.offset.dy, now
+            )
 
             left_pupil, right_pupil = animator.update(target_dx, target_dy)
 
