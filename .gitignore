@@ -2,8 +2,4 @@
 __pycache__/
 *.pyc
 calibration.json
-assets/jeff.jpg
 models/
-sounds/*.wav
-sounds/*.ogg
-sounds/*.mp3
