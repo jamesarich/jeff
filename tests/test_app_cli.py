@@ -9,12 +9,12 @@ def test_parse_args_defaults():
     assert args.cooldown == 60.0
     assert args.smoothing_alpha == 0.3
     assert args.fps == 15.0
-    assert args.mirror is True
-
-
-def test_parse_args_no_mirror():
-    args = parse_args(["--no-mirror"])
     assert args.mirror is False
+
+
+def test_parse_args_mirror_opt_in():
+    args = parse_args(["--mirror"])
+    assert args.mirror is True
 
 
 def test_parse_args_default_paths_are_absolute():

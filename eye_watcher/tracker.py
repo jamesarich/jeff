@@ -27,7 +27,7 @@ class FaceTracker:
         camera_index: int = 0,
         debug: bool = False,
         model_path: Path = DEFAULT_MODEL_PATH,
-        mirror: bool = True,
+        mirror: bool = False,
     ):
         if not Path(model_path).is_file():
             raise FileNotFoundError(

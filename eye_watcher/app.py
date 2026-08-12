@@ -27,10 +27,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--cooldown", type=float, default=60.0)
     parser.add_argument("--smoothing-alpha", type=float, default=0.3)
     parser.add_argument("--fps", type=float, default=15.0)
-    # Correct horizontal sense depends on where the camera sits relative to the
-    # display: mirrored is right when the camera is mounted on the display
-    # (kiosk/Pi build); --no-mirror for off-axis camera placements.
-    parser.add_argument("--mirror", action=argparse.BooleanOptionalAction, default=True)
+    # Correct horizontal sense depends on the camera's placement relative to
+    # the display. Default verified against a real setup; if the eyes track
+    # the wrong way horizontally on yours, pass --mirror.
+    parser.add_argument("--mirror", action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument("--fullscreen", action="store_true")
     parser.add_argument("--debug", action="store_true")
     return parser.parse_args(argv)
