@@ -1,7 +1,9 @@
+import random
+
 import pytest
 
 from eye_watcher.calibration import Calibration, EyeCalibration
-from eye_watcher.eyes import GazeHold, PupilAnimator, idle_offset
+from eye_watcher.eyes import Blinker, GazeHold, PupilAnimator, idle_offset
 
 
 def make_calibration() -> Calibration:
@@ -72,3 +74,35 @@ def test_gaze_hold_falls_back_to_idle_after_grace():
 def test_gaze_hold_idles_before_any_face_seen():
     hold = GazeHold(hold_seconds=2.0)
     assert hold.update(False, 0.0, 0.0, now=5.0) == idle_offset(5.0)
+
+
+def make_blinker(**kwargs) -> Blinker:
+    return Blinker(rng=random.Random(0), min_interval=3.0, max_interval=3.0, duration=0.2, **kwargs)
+
+
+def test_blinker_eyes_open_before_first_blink():
+    blinker = make_blinker()
+    assert blinker.amount(0.0) == 0.0
+    assert blinker.amount(2.9) == 0.0
+
+
+def test_blinker_fully_closed_at_blink_midpoint():
+    blinker = make_blinker()
+    blinker.amount(0.0)                      # schedules first blink at t=3.0
+    assert blinker.amount(3.1) == pytest.approx(1.0)
+
+
+def test_blinker_reopens_after_blink():
+    blinker = make_blinker()
+    blinker.amount(0.0)
+    blinker.amount(3.1)
+    assert blinker.amount(3.25) == 0.0
+
+
+def test_blinker_blinks_again_after_next_interval():
+    blinker = make_blinker()
+    blinker.amount(0.0)
+    blinker.amount(3.1)      # mid-blink
+    blinker.amount(3.25)     # blink over, next scheduled 3s later
+    assert blinker.amount(6.0) == 0.0
+    assert blinker.amount(6.35) == pytest.approx(1.0)

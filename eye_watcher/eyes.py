@@ -1,4 +1,5 @@
 import math
+import random
 
 from eye_watcher.calibration import Calibration, EyeCalibration
 
@@ -46,6 +47,39 @@ class GazeHold:
         ):
             return self._last_target
         return idle_offset(now)
+
+
+class Blinker:
+    """Periodic blink: returns eyelid closure 0.0 (open) → 1.0 (closed)."""
+
+    def __init__(
+        self,
+        rng: random.Random | None = None,
+        min_interval: float = 3.0,
+        max_interval: float = 7.0,
+        duration: float = 0.2,
+    ):
+        self._rng = rng if rng is not None else random.Random()
+        self.min_interval = min_interval
+        self.max_interval = max_interval
+        self.duration = duration
+        self._next_blink_time: float | None = None
+
+    def _schedule(self, now: float) -> None:
+        self._next_blink_time = now + self._rng.uniform(self.min_interval, self.max_interval)
+
+    def amount(self, now: float) -> float:
+        if self._next_blink_time is None:
+            self._schedule(now)
+            return 0.0
+        if now < self._next_blink_time:
+            return 0.0
+        progress = (now - self._next_blink_time) / self.duration
+        if progress >= 1.0:
+            self._schedule(now)
+            return 0.0
+        # triangle wave: open -> closed -> open over the blink duration
+        return 1.0 - abs(2.0 * progress - 1.0)
 
 
 class PupilAnimator:
