@@ -18,4 +18,5 @@ random sound clip the first time you come into view.
    to generate `calibration.json`.
 5. Add a few `.wav`/`.mp3` clips to `sounds/` (see `sounds/README.md`).
 6. Run `python main.py` (add `--debug` to see the tracking overlay, `--fullscreen`
-   for kiosk mode, `--camera-index N` to pick a different camera).
+   for kiosk mode, `--camera-index N` to pick a different camera). Quit with
+   Escape, the window close button, or Ctrl+C.

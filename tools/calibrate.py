@@ -1,4 +1,5 @@
 import argparse
+import math
 import sys
 from pathlib import Path
 
@@ -23,7 +24,10 @@ def _collect_points(image_path: Path) -> list[tuple[int, int]]:
     window = "Calibrate (click 4 points, q to quit)"
 
     def on_click(event, x, y, flags, userdata):
-        if event == cv2.EVENT_LBUTTONDOWN:
+        # waitKey can deliver several queued clicks per loop iteration; without
+        # this guard a double-click on the 4th point overshoots the 4-tuple
+        # unpack at the call site.
+        if event == cv2.EVENT_LBUTTONDOWN and len(points) < 4:
             points.append((x, y))
 
     cv2.namedWindow(window)
@@ -38,13 +42,15 @@ def _collect_points(image_path: Path) -> list[tuple[int, int]]:
         cv2.imshow(window, display)
         if cv2.waitKey(20) & 0xFF == ord("q"):
             sys.exit("Calibration cancelled")
+        if cv2.getWindowProperty(window, cv2.WND_PROP_VISIBLE) < 1:
+            sys.exit("Calibration cancelled (window closed)")
 
     cv2.destroyWindow(window)
     return points
 
 
 def _distance(a: tuple[int, int], b: tuple[int, int]) -> float:
-    return ((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2) ** 0.5
+    return math.dist(a, b)
 
 
 def main() -> None:
