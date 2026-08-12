@@ -22,7 +22,13 @@ class TrackResult:
 
 
 class FaceTracker:
-    def __init__(self, camera_index: int = 0, debug: bool = False, model_path: Path = DEFAULT_MODEL_PATH):
+    def __init__(
+        self,
+        camera_index: int = 0,
+        debug: bool = False,
+        model_path: Path = DEFAULT_MODEL_PATH,
+        mirror: bool = True,
+    ):
         if not Path(model_path).is_file():
             raise FileNotFoundError(
                 f"MediaPipe model not found: {model_path} — see README.md for the download step"
@@ -40,6 +46,7 @@ class FaceTracker:
         )
         self._landmarker = mp.tasks.vision.FaceLandmarker.create_from_options(options)
         self._debug = debug
+        self._mirror = mirror
         self._start_time = time.monotonic()
         self._last_timestamp_ms = -1
         self._consecutive_failures = 0
@@ -80,7 +87,7 @@ class FaceTracker:
         landmarks = largest_face(result.face_landmarks)
         nose = landmarks[NOSE_TIP_LANDMARK_INDEX]
         nose_x, nose_y = nose.x * width, nose.y * height
-        offset = landmarks_to_offset(nose_x, nose_y, width, height, mirror_x=True)
+        offset = landmarks_to_offset(nose_x, nose_y, width, height, mirror_x=self._mirror)
 
         if self._debug:
             debug_frame = frame.copy()

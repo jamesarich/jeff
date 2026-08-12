@@ -27,6 +27,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--cooldown", type=float, default=60.0)
     parser.add_argument("--smoothing-alpha", type=float, default=0.3)
     parser.add_argument("--fps", type=float, default=15.0)
+    # Correct horizontal sense depends on where the camera sits relative to the
+    # display: mirrored is right when the camera is mounted on the display
+    # (kiosk/Pi build); --no-mirror for off-axis camera placements.
+    parser.add_argument("--mirror", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--fullscreen", action="store_true")
     parser.add_argument("--debug", action="store_true")
     return parser.parse_args(argv)
@@ -61,7 +65,7 @@ def main(argv: list[str] | None = None) -> None:
     tracker = None
     renderer = None
     try:
-        tracker = FaceTracker(camera_index=args.camera_index, debug=args.debug)
+        tracker = FaceTracker(camera_index=args.camera_index, debug=args.debug, mirror=args.mirror)
         renderer = Renderer(image_path=args.image, calibration=calibration, fullscreen=args.fullscreen)
         audio = AudioPlayer()
         clock = pygame.time.Clock()
