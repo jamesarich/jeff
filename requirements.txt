@@ -1,0 +1,8 @@
+opencv-python
+mediapipe
+pygame
+pytest
+
+# Note: if mediapipe.solutions.face_mesh is missing on your installed version,
+# install an older mediapipe 0.10.x release -- the `solutions` API has been
+# superseded by a newer Tasks API in some releases.
