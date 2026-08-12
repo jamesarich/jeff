@@ -20,10 +20,20 @@ class Renderer:
         self.calibration = calibration
         self.pupil_radius = min(calibration.left.radius, calibration.right.radius) * 0.35
 
+    def _draw_eye(self, eye, pupil: tuple[float, float]) -> None:
+        # White sclera under the pupil so it stays visible against the photo's
+        # dark eyes; sized to cover the pupil's full travel range.
+        sclera_rx = eye.radius * 1.1
+        sclera_ry = eye.radius * 0.7
+        sclera_rect = pygame.Rect(0, 0, int(sclera_rx * 2), int(sclera_ry * 2))
+        sclera_rect.center = (int(eye.center_x), int(eye.center_y))
+        pygame.draw.ellipse(self.screen, (245, 240, 232), sclera_rect)
+        pygame.draw.circle(self.screen, (20, 20, 20), (int(pupil[0]), int(pupil[1])), int(self.pupil_radius))
+
     def draw(self, left_pupil: tuple[float, float], right_pupil: tuple[float, float]) -> None:
         self.screen.blit(self.image, (0, 0))
-        pygame.draw.circle(self.screen, (20, 20, 20), (int(left_pupil[0]), int(left_pupil[1])), int(self.pupil_radius))
-        pygame.draw.circle(self.screen, (20, 20, 20), (int(right_pupil[0]), int(right_pupil[1])), int(self.pupil_radius))
+        self._draw_eye(self.calibration.left, left_pupil)
+        self._draw_eye(self.calibration.right, right_pupil)
         pygame.display.flip()
 
     def close(self) -> None:
