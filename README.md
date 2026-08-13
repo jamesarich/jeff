@@ -7,7 +7,7 @@ plays a random sound clip the first time you come into view.
 <img src="docs/screenshot.png" width="360" alt="Jeff, watching">
 
 All face tracking runs locally, in memory, per frame. Nothing is recorded,
-stored, or sent anywhere — this thing goes in a bathroom.
+stored, or sent anywhere.
 
 ## Setup
 
