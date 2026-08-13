@@ -1,7 +1,5 @@
 # jeff
 
-> Life finds a loo.
-
 An animated eye-contact version of the "Jeff Goldblum is watching you poop" meme.
 A photo of Jeff Goldblum tracks your face with its eyes via camera, blinks, and
 plays a random sound clip the first time you come into view.
