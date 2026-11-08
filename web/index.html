@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="robots" content="noindex">
+  <title>jeff</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="stage" width="544" height="830" aria-label="Jeff, watching"></canvas>
+
+  <div id="overlay">
+    <button id="start" type="button">Let Jeff see you</button>
+    <p>Uses your camera to follow your face. Tracking runs in this browser tab; nothing is recorded or sent anywhere.</p>
+  </div>
+
+  <div id="controls" hidden>
+    <button id="mirror" type="button" title="Flip tracking direction (m)">mirror</button>
+    <button id="fullscreen" type="button" title="Fullscreen (f)">full</button>
+  </div>
+
+  <div id="status" role="status"></div>
+
+  <video id="camera" playsinline muted autoplay hidden></video>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

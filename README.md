@@ -47,7 +47,23 @@ Quit with Escape, the window close button, or Ctrl+C.
 
 ```bash
 .venv/bin/python -m pytest
+node --test web/
 ```
+
+## Web version
+
+`web/` is the same app as a static page for a laptop or phone browser: the
+camera comes from `getUserMedia`, face tracking runs in the tab with MediaPipe's
+browser build, and the clips play through Web Audio. Nothing leaves the device.
+
+```bash
+sh web/build.sh            # assembles web/dist from assets/, sounds/ and calibration.json
+kwik deploy web/dist jeff  # https://jeff.kwik.ws/
+```
+
+The build re-encodes the clips to MP3 because iOS Safari does not play `.ogg`.
+Tap the button to grant the camera; `m` or the corner button flips the
+horizontal tracking sense, `f` toggles fullscreen.
 
 ## Deploying on a Raspberry Pi
 
